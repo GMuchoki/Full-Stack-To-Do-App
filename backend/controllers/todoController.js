@@ -43,6 +43,35 @@ export const updateTodo = (req, res) => {
     }
 };
 
+export const patchTodo = (req, res) => {
+    const { id } = req.params;
+    const { task, completed } = req.body;
+
+    // Fetch the current todo first
+    const existing = db.prepare("SELECT * FROM todos WHERE id = ?").get(id);
+    if (!existing) {
+        return res.status(404).json({ error: "Task not found" });
+    }
+
+    // If a field isn't provided in the body, keep the existing value
+    const newTask = task !== undefined ? task : existing.task;
+    const newCompleted = completed !== undefined ? completed : existing.completed;
+
+    const update = db.prepare(
+        "UPDATE todos SET task = ?, completed = ? WHERE id = ?"
+    ).run(newTask, newCompleted, id);
+
+    if (update.changes > 0) {
+        res.status(200).json({
+            message: "Task updated successfully",
+            updated: { id, task: newTask, completed: newCompleted }
+        });
+    } else {
+        res.status(500).json({ error: "Failed to update task" });
+    }
+};
+
+
 export const deleteTodo = (req, res) => {
     const { id } = req.params;
 
